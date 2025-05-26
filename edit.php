@@ -9,13 +9,11 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-
 $stmt = $conn->prepare("SELECT name, phone, email, date, gender, info FROM users WHERE id = ?");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
 $user = $result->fetch_assoc();
-
 
 $languages = [];
 $stmt = $conn->prepare("SELECT l.language FROM languages_users lu JOIN languages l ON lu.language_id = l.id WHERE lu.user_id = ?");
@@ -27,6 +25,10 @@ while ($row = $res->fetch_assoc()) {
 }
 
 $all_languages = ["Pascal", "C", "C++", "JavaScript", "PHP", "Python", "Java", "Haskell", "Clojure", "Prolog", "Scala", "Go"];
+
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 ?>
 
 <!DOCTYPE html>
@@ -39,11 +41,12 @@ $all_languages = ["Pascal", "C", "C++", "JavaScript", "PHP", "Python", "Java", "
 <h2>Редактирование данных</h2>
 
 <form method="post" action="update.php">
+    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
     <label>ФИО:<br><input type="text" name="fio" value="<?= htmlspecialchars($user['name']) ?>"></label><br><br>
     <label>Телефон:<br><input type="text" name="phone" value="<?= htmlspecialchars($user['phone']) ?>"></label><br><br>
     <label>Email:<br><input type="email" name="email" value="<?= htmlspecialchars($user['email']) ?>"></label><br><br>
     <label>Дата рождения:<br><input type="date" name="date" value="<?= htmlspecialchars($user['date']) ?>"></label><br><br>
-    
+
     Пол:<br>
     <label><input type="radio" name="gender" value="male" <?= $user['gender'] === 'male' ? 'checked' : '' ?>> Мужской</label><br>
     <label><input type="radio" name="gender" value="female" <?= $user['gender'] === 'female' ? 'checked' : '' ?>> Женский</label><br><br>
@@ -51,7 +54,7 @@ $all_languages = ["Pascal", "C", "C++", "JavaScript", "PHP", "Python", "Java", "
     <label>Любимые языки программирования:<br>
         <select name="languages[]" multiple size="5">
             <?php foreach ($all_languages as $lang): ?>
-                <option value="<?= $lang ?>" <?= in_array($lang, $languages) ? 'selected' : '' ?>><?= $lang ?></option>
+                <option value="<?= htmlspecialchars($lang) ?>" <?= in_array($lang, $languages) ? 'selected' : '' ?>><?= htmlspecialchars($lang) ?></option>
             <?php endforeach; ?>
         </select>
     </label><br><br>
